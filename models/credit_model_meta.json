@@ -1,0 +1,45 @@
+{
+  "features": [
+    "wage_to_revenue",
+    "operating_cash_flow_eur_m",
+    "debt_to_assets",
+    "regulatory_headroom_eur_m",
+    "uefa_coefficient_trend",
+    "league_position_trend",
+    "broadcast_revenue_share",
+    "payment_timeliness_score",
+    "management_tenure_years"
+  ],
+  "rating_bands": [
+    {
+      "rating": "A",
+      "pd_upper": 0.03
+    },
+    {
+      "rating": "B",
+      "pd_upper": 0.07
+    },
+    {
+      "rating": "C",
+      "pd_upper": 0.15
+    },
+    {
+      "rating": "D",
+      "pd_upper": 0.3
+    },
+    {
+      "rating": "E",
+      "pd_upper": 1.0
+    }
+  ],
+  "base_rate_pct": 2.4,
+  "spreads_pp": {
+    "A": 1.5,
+    "B": 3.0,
+    "C": 5.0,
+    "D": 8.0,
+    "E": 13.0
+  },
+  "overall_default_rate": 0.116,
+  "data_note": "Model trained on SYNTHETIC data (generate_data.py)."
+}
