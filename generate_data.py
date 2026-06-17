@@ -97,8 +97,13 @@ def sample_clubs(n):
     # Independent baselines in [0, 1] for each feature, then nudge by `size` where sensible.
     u = {f: rng.random(n) for f in FEATURE_COLS}
 
-    # Wage-to-revenue: smaller clubs more likely to overstretch -> mild negative tie to size.
-    wage_unit = np.clip(u["wage_to_revenue"] * 0.8 + (1 - size) * 0.2, 0, 1)
+    # Wage-to-revenue: re-centred LOW so a typical healthy club sits ~0.55-0.65 and only
+    # ~15-20% of clubs breach the 0.70 FSR cap. A Beta(2, 6) base skews the mass toward the
+    # bottom of the [0.45, 1.10] range (instead of the old uniform draw, which put ~68% of
+    # clubs over the cap and diluted the threshold effect). Smaller clubs are still mildly
+    # more likely to overstretch -> a weak negative tie to size.
+    wage_base = rng.beta(2.0, 7.0, n)
+    wage_unit = np.clip(wage_base * 0.9 + (1 - size) * 0.1, 0, 1)
 
     # Operating cash flow: scales up with size (bigger clubs generate more cash).
     ocf_unit = np.clip(u["operating_cash_flow_eur_m"] * 0.7 + size * 0.3, 0, 1)
