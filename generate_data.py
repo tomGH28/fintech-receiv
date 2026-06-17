@@ -229,6 +229,79 @@ def build_training_set():
     return df
 
 
+# Per-feature decimal rounding — kept identical to sample_clubs() so listing feature
+# columns look the same as the training data.
+_LISTING_ROUND = {
+    "annual_revenue_eur_m": 1,
+    "wage_to_revenue": 3,
+    "operating_cash_flow_eur_m": 1,
+    "debt_to_assets": 3,
+    "regulatory_headroom_eur_m": 1,
+    "uefa_coefficient_trend": 2,
+    "league_position_trend": 2,
+    "broadcast_revenue_share": 3,
+    "payment_timeliness_score": 3,
+    "management_tenure_years": 1,
+}
+
+# Demo listing RISK TIERS. The 20 marketplace listings are DELIBERATELY CURATED to span
+# the full A-E rating range. Sampling them from the single healthy-skewed population (as
+# the training set does) clusters almost everything in rating A after calibration, which
+# makes the marketplace demo monotonous. Instead we draw clubs from explicit risk tiers,
+# and force a few structurally distressed clubs so the hard filter visibly trips.
+# Each tier gives, per feature, the [low, high] range to draw uniformly from.
+_LISTING_TIERS = [
+    ("strong", 5, {  # aim: rating A / B
+        "annual_revenue_eur_m": (120, 300), "wage_to_revenue": (0.48, 0.60),
+        "operating_cash_flow_eur_m": (35, 75), "debt_to_assets": (0.12, 0.30),
+        "regulatory_headroom_eur_m": (28, 55), "uefa_coefficient_trend": (2, 14),
+        "league_position_trend": (0, 9), "broadcast_revenue_share": (0.20, 0.40),
+        "payment_timeliness_score": (0.88, 0.99), "management_tenure_years": (6, 12),
+    }),
+    ("moderate", 12, {  # aim: a SPREAD across B / C / D / E
+        # Deliberately broad ranges. The credit model has steep boundaries, so sampling a
+        # wide moderate band (rather than narrow per-grade pockets) is what reliably scatters
+        # these clubs across the B-E grades instead of snapping them all to one rating.
+        "annual_revenue_eur_m": (40, 150), "wage_to_revenue": (0.62, 0.82),
+        "operating_cash_flow_eur_m": (3, 28), "debt_to_assets": (0.32, 0.68),
+        "regulatory_headroom_eur_m": (6, 28), "uefa_coefficient_trend": (-10, 6),
+        "league_position_trend": (-8, 5), "broadcast_revenue_share": (0.32, 0.62),
+        "payment_timeliness_score": (0.34, 0.60), "management_tenure_years": (1, 8),
+    }),
+    ("distressed", 3, {  # aim: rating D / E AND trip the hard filter
+        # Negative operating cash flow and payment timeliness < 0.30 trip the hard filter
+        # on every club in this tier; debt/wage/headroom ranges trip extra rules at random.
+        "annual_revenue_eur_m": (25, 90), "wage_to_revenue": (0.72, 0.95),
+        "operating_cash_flow_eur_m": (-25, -2), "debt_to_assets": (0.55, 0.88),
+        "regulatory_headroom_eur_m": (-15, 15), "uefa_coefficient_trend": (-15, -2),
+        "league_position_trend": (-10, -1), "broadcast_revenue_share": (0.45, 0.68),
+        "payment_timeliness_score": (0.15, 0.28), "management_tenure_years": (0, 4),
+    }),
+]
+
+
+def sample_listing_clubs():
+    """
+    Draw the marketplace clubs from curated risk tiers (see _LISTING_TIERS) so the demo
+    listings span the full A-E rating range, with a few distressed clubs that trip the
+    hard filter. Returns the same feature columns as sample_clubs(), in randomised order
+    so the marketplace isn't sorted by quality.
+    """
+    assert sum(count for _, count, _ in _LISTING_TIERS) == N_LISTINGS
+
+    rows = []
+    for _, count, ranges in _LISTING_TIERS:
+        tier = {}
+        for feature, (low, high) in ranges.items():
+            tier[feature] = np.round(rng.uniform(low, high, count), _LISTING_ROUND[feature])
+        rows.append(pd.DataFrame(tier))
+
+    df = pd.concat(rows, ignore_index=True)
+    # Shuffle so strong/weak listings are interleaved on the marketplace.
+    df = df.sample(frac=1.0, random_state=SEED).reset_index(drop=True)
+    return df
+
+
 def build_listings_set():
     """
     ~20 CURRENT receivables for the marketplace (no label — the future is unknown).
@@ -237,8 +310,11 @@ def build_listings_set():
     The credit features describe the PAYING club (whose default risk we price). We add a
     face value and a simple 3-installment annual schedule. This stands in for the stubbed
     Layer-1 contract-parser output.
+
+    The paying clubs are curated across risk tiers (sample_listing_clubs) so the demo
+    spans the full A-E rating range rather than clustering in A.
     """
-    df = sample_clubs(N_LISTINGS)
+    df = sample_listing_clubs()
 
     # Distinct paying clubs (the obligors we score).
     paying_names, paying_leagues = assign_club_identities(N_LISTINGS, unique=True)
