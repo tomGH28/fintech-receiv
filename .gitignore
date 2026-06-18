@@ -1,0 +1,48 @@
+# --- RECEIV generated state ---
+# Local SQLite marketplace state (listings/bids/settlements) is regenerated via
+# marketplace.seed_listings(); it is not source and must not be committed.
+*.db
+*.sqlite
+*.sqlite3
+
+# NOTE: data/ CSVs and models/ artifacts are intentionally NOT ignored — they are
+# project deliverables and should be committed.
+
+# --- Python byte-code / caches ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+.env
+env.bak/
+venv.bak/
+
+# --- Packaging / build artifacts ---
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# --- Tooling / coverage ---
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
