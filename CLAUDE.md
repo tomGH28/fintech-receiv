@@ -75,3 +75,7 @@ defaults correlated to weak fundamentals so the model learns a real pattern.
 - Do not invent business-plan facts: the fee is 1.0–1.5%, ratings are A–E, breakeven is
   ~10 deals/year. Ask if unsure rather than guessing.
 - Do not build the investor side as a read-only dashboard — bidding and matching must work.
+
+Git is handled manually by the user in GitHub Desktop. NEVER run git add, git commit, git push,
+or any git command, and never offer to. Only create and edit files; leave all version control to
+the user.
