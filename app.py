@@ -123,11 +123,13 @@ def render_credit_decision(decision):
     # Top risk drivers — the per-prediction explanation, in plain language.
     st.markdown("**Why this rating — top risk drivers**")
     for d in decision["top_drivers"]:
-        if d["direction"] == "increases risk":
-            arrow, dcol = "🔺", "red"
-        else:
-            arrow, dcol = "🔻", "green"
-        st.markdown(f"{arrow} **{d['label']}** = {d['value']:,.2f}  —  :{dcol}[{d['direction']}]")
+        # Colour the arrow AND the label together so they agree: red = raises risk, green =
+        # lowers it. Use a plain ▲/▼ glyph wrapped in Streamlit markdown colour (the fixed-
+        # colour 🔺/🔻 emoji always render red, which is what made "reduces risk" look wrong).
+        increases = d["direction"] == "increases risk"
+        arrow = "▲" if increases else "▼"
+        dcol = "red" if increases else "green"
+        st.markdown(f":{dcol}[{arrow}] **{d['label']}** = {d['value']:,.2f}  —  :{dcol}[{d['direction']}]")
     st.caption("Drivers come from the model's own SHAP contributions for this specific club.")
 
 
@@ -189,6 +191,7 @@ def render_sidebar():
         mp.seed_listings(reset=True)            # reset + reseed (Layer 3)
         st.session_state.pop("new_score", None)  # drop any in-progress scoring
         st.session_state.pop("last_listed", None)
+        st.session_state.pop("inv_selected", None)  # drop investor navigation
         st.sidebar.success("Demo reset.")
         st.rerun()
 
@@ -301,20 +304,179 @@ def club_view():
         if st.session_state.get("last_listed"):
             st.success(
                 f"✅ Listed as **{st.session_state['last_listed']}** — it's now an open listing "
-                "investors can browse and bid on (Investor view arrives in pass 2)."
+                "investors can browse and bid on (switch to the **Investor** role in the sidebar)."
             )
 
 
 # --------------------------------------------------------------------------------------
-# INVESTOR VIEW (placeholder for pass 2)
+# INVESTOR VIEW — three stages driven by listing status: browse -> detail+bid -> reveal.
+# Navigation state lives in st.session_state["inv_selected"] (the listing being viewed).
 # --------------------------------------------------------------------------------------
-def investor_view():
-    st.subheader("Investor")
-    st.info(
-        "🚧 **Coming in pass 2.** The investor side will browse live listings, open one to see "
-        "its credit breakdown and feature importances, place a sealed bid (the discount rate it "
-        "requires), and the auction will match the lowest qualifying bid and show the settlement."
+# A->E sort order (A best). Built from the model's own band order.
+RATING_ORDER = {r: i for i, (r, _) in enumerate(cm.RATING_BANDS)}
+
+
+def render_settlement(listing):
+    """
+    Stage 3 reveal for a MATCHED listing: unseal + rank every bid, then show the settlement
+    economics with cash-to-club as the headline (the club's payoff).
+    """
+    bids = mp.get_bids(listing["listing_id"])
+    settlement = mp.get_settlement(listing["listing_id"])
+
+    st.success("🔓 Auction run — bids revealed below.")
+
+    # Rank bids: winner first, then beaten (active->lost) cheapest-first, then rejected.
+    def sort_key(b):
+        priority = {"winning": 0, "lost": 1, "rejected": 2}.get(b["status"], 3)
+        return (priority, b["bid_rate_pct"])
+
+    st.markdown("**Bids (unsealed)**")
+    for b in sorted(bids, key=sort_key):
+        if b["status"] == "winning":
+            st.markdown(f"🏆 :green[**{b['investor_name']} — {b['bid_rate_pct']:.2f}%**] · "
+                        ":green[winning bid (lowest qualifying rate)]")
+        elif b["status"] == "lost":
+            # Greyed: qualified but outbid by a cheaper rate.
+            st.markdown(f":gray[▫️ {b['investor_name']} — {b['bid_rate_pct']:.2f}% · outbid]")
+        else:  # rejected
+            st.markdown(f":red[🚫 {b['investor_name']} — {b['bid_rate_pct']:.2f}% · "
+                        f"rejected (below {listing['floor_rate_pct']:.1f}% floor)]")
+
+    st.divider()
+
+    # --- Settlement economics -----------------------------------------------------------
+    st.markdown("**Settlement**")
+    face = listing["face_value_eur"]
+    s = st.columns(3)
+    s[0].metric("Accepted discount rate", f"{settlement['accepted_rate_pct']:.2f}%")
+    s[1].metric("Present value of installments", _eur(settlement["present_value_eur"]),
+                help="The three installments discounted at the accepted rate. Less than face "
+                     "value because the money arrives over three years.")
+    s[2].metric(f"RECEIV fee ({mp.RECEIV_FEE_PCT}% of face)", _eur(settlement["receiv_fee_eur"]))
+
+    # Headline outcome for the club.
+    st.metric(
+        "💰 Cash to club today", _eur(settlement["cash_to_club_eur"]),
+        delta=f"{_eur(settlement['cash_to_club_eur'] - face)} vs {_eur(face)} face value",
+        delta_color="off",
     )
+    st.caption("Cash to club = present value − RECEIV fee. The club gets paid now instead of "
+               "waiting three years for the installments.")
+
+
+def investor_detail(listing):
+    """Stage 2/3: one listing — deal + credit breakdown, then either bidding or the reveal."""
+    if st.button("← Back to listings"):
+        st.session_state.pop("inv_selected", None)
+        st.rerun()
+
+    st.markdown(f"### {listing['listing_id']} — {listing['paying_club']}")
+    render_deal_summary(listing)
+    st.divider()
+
+    # Same shared credit-decision component the club saw (re-scored for the live drivers).
+    decision = cm.score_club(rating_to_features(listing))
+    render_credit_decision(decision)
+    st.divider()
+
+    # If already matched, show the reveal instead of the bid form.
+    if listing["status"] != "open":
+        render_settlement(listing)
+        return
+
+    # --- Stage 2: place a sealed bid ----------------------------------------------------
+    st.markdown("**Place a sealed bid**")
+    st.caption("Bid the annual discount rate you require. Bids are SEALED — you cannot see "
+               "others' bids (or their values) until the auction is run.")
+
+    with st.form("bid_form"):
+        b1, b2 = st.columns([2, 1])
+        investor_name = b1.text_input("Investor name", "Acme Credit Partners")
+        bid_rate = b2.number_input("Required discount rate (%)", min_value=0.0, max_value=40.0,
+                                   value=round(listing["floor_rate_pct"] + 1.0, 1), step=0.1)
+        placed = st.form_submit_button("🔒 Submit sealed bid", use_container_width=True)
+
+    if placed:
+        result = mp.place_bid(listing["listing_id"], investor_name, bid_rate)  # Layer-3 call
+        if result["status"] == "rejected":
+            # Honest feedback: below-floor bids underprice the risk and are rejected.
+            st.error(
+                f"Bid **{bid_rate:.2f}%** is below the **{listing['floor_rate_pct']:.1f}% floor** "
+                "for this rating — rejected as underpricing the risk. Bid at or above the floor."
+            )
+        else:
+            st.success(f"Sealed bid of **{bid_rate:.2f}%** recorded for **{investor_name}**.")
+
+    # Sealed status: investors may see THAT bids exist, never their values.
+    active = [b for b in mp.get_bids(listing["listing_id"]) if b["status"] == "active"]
+    st.divider()
+    if active:
+        st.info(f"🔒 {len(active)} sealed bid(s) on this listing — values hidden until the auction runs.")
+        if st.button("🔓 Run auction & reveal", type="primary", use_container_width=True):
+            mp.run_auction(listing["listing_id"])  # lowest qualifying rate wins
+            st.rerun()
+    else:
+        st.warning("No qualifying bids yet. Place at least one bid at/above the floor to run the auction.")
+
+
+def investor_browse():
+    """Stage 1: scannable grid of all OPEN listings, openable into the detail view."""
+    st.write(
+        "Fund a receivable today and collect the installments over the next three years. "
+        "You bid the **discount rate you require**; the lowest qualifying bid wins."
+    )
+
+    listings = mp.get_open_listings()
+    if not listings:
+        st.info("No open listings right now. The club side can list new receivables, "
+                "or reset the demo from the sidebar.")
+        return
+
+    # Let the user sort the board.
+    sort = st.selectbox("Sort by", [
+        "Rating (best first)", "Rating (worst first)",
+        "Face value (high → low)", "Face value (low → high)",
+    ])
+    if sort == "Rating (best first)":
+        listings.sort(key=lambda l: RATING_ORDER[l["rating"]])
+    elif sort == "Rating (worst first)":
+        listings.sort(key=lambda l: RATING_ORDER[l["rating"]], reverse=True)
+    elif sort == "Face value (high → low)":
+        listings.sort(key=lambda l: l["face_value_eur"], reverse=True)
+    else:
+        listings.sort(key=lambda l: l["face_value_eur"])
+
+    # Header + one row per listing.
+    cols_spec = [3, 2, 1.3, 1.2, 1.6]
+    h = st.columns(cols_spec)
+    for col, label in zip(h, ["Paying club", "Face value", "Rating", "Floor", ""]):
+        col.caption(label)
+
+    for l in listings:
+        emoji, colour = RATING_STYLE[l["rating"]]
+        row = st.columns(cols_spec, vertical_alignment="center")
+        row[0].markdown(f"**{l['paying_club']}**  \n:gray[{l['paying_club_league']}]")
+        row[1].markdown(_eur(l["face_value_eur"]))
+        row[2].markdown(f"{emoji} :{colour}[**{l['rating']}**]")
+        row[3].markdown(f"{l['floor_rate_pct']:.1f}%")
+        if row[4].button("View & bid", key=f"view_{l['listing_id']}", use_container_width=True):
+            st.session_state["inv_selected"] = l["listing_id"]
+            st.rerun()
+
+
+def investor_view():
+    st.subheader("Investor — fund a receivable, collect the installments later")
+
+    selected = st.session_state.get("inv_selected")
+    if selected:
+        listing = mp.get_listing(selected)
+        if listing is None:  # e.g. demo was reset while viewing
+            st.session_state.pop("inv_selected", None)
+            st.rerun()
+        investor_detail(listing)
+    else:
+        investor_browse()
 
 
 # --------------------------------------------------------------------------------------
