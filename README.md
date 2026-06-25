@@ -14,7 +14,7 @@ streamlit run app.py
 ```
 
 The app seeds 20 demo listings automatically on first run. No API keys, no network, no
-external services — everything runs fully offline.
+external services, everything runs fully offline.
 
 ---
 
