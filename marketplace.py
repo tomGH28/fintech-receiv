@@ -35,7 +35,7 @@ RECEIV_FEE_PCT = 1.25
 
 # Listing columns copied verbatim from the CSV (identity + deal structure).
 _DEAL_COLS = [
-    "selling_club", "paying_club", "paying_club_league", "face_value_eur",
+    "player_name", "selling_club", "paying_club", "paying_club_league", "face_value_eur",
     "installment_1_eur", "installment_2_eur", "installment_3_eur",
 ]
 
@@ -56,6 +56,20 @@ def get_conn(db_path=DB_PATH):
 # --------------------------------------------------------------------------------------
 def init_db(db_path=DB_PATH):
     """Create the tables if they don't already exist."""
+    import os
+
+    # Schema-upgrade guard: if the DB exists but predates the player_name column, wipe it.
+    # Must explicitly close the connection before os.remove — on Windows, SQLite holds a
+    # file lock until close() is called, so the delete would otherwise silently fail.
+    if os.path.exists(db_path):
+        _chk = get_conn(db_path)
+        try:
+            existing = [r[1] for r in _chk.execute("PRAGMA table_info(listings)").fetchall()]
+        finally:
+            _chk.close()
+        if existing and "player_name" not in existing:
+            os.remove(db_path)
+
     # The nine credit-feature columns are added dynamically so the schema always matches
     # whatever credit_model.FEATURES declares (single source of truth).
     feature_cols = ",\n            ".join(f"{f} REAL" for f in FEATURES)
@@ -64,6 +78,7 @@ def init_db(db_path=DB_PATH):
         conn.execute(f"""
         CREATE TABLE IF NOT EXISTS listings (
             listing_id          TEXT PRIMARY KEY,
+            player_name         TEXT,
             selling_club        TEXT,
             paying_club         TEXT,
             paying_club_league  TEXT,
@@ -109,6 +124,7 @@ def init_db(db_path=DB_PATH):
             FOREIGN KEY (winning_bid_id) REFERENCES bids (bid_id)
         )
         """)
+
 
 
 def reset_db(db_path=DB_PATH):

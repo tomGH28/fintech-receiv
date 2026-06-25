@@ -1,21 +1,16 @@
-listing_id,selling_club,paying_club,paying_club_league,face_value_eur,installment_1_eur,installment_2_eur,installment_3_eur,annual_revenue_eur_m,wage_to_revenue,operating_cash_flow_eur_m,debt_to_assets,regulatory_headroom_eur_m,uefa_coefficient_trend,league_position_trend,broadcast_revenue_share,payment_timeliness_score,management_tenure_years
-RCV-001,RKC Zandvoort-Noord,SC Lindehoven,Eredivisie,25426000,10170000,8899000,6357000,227.0,0.579,55.6,0.276,36.2,5.6,6.13,0.267,0.898,10.9
-RCV-002,Union Kempen,TSV Mooshausen,Bundesliga,20112000,8045000,7039000,5028000,54.5,0.864,-13.7,0.863,-13.0,-10.92,-8.83,0.466,0.161,1.7
-RCV-003,TSV Mooshausen,Royal Ardennes FC,Belgian Pro League,12768000,5107000,4469000,3192000,132.4,0.716,8.8,0.592,20.3,2.49,-1.37,0.474,0.477,2.0
-RCV-004,AFC Kanaalstad,RKC Zandvoort-Noord,Eredivisie,23237000,9295000,8133000,5809000,204.8,0.599,43.0,0.186,49.8,9.47,3.92,0.334,0.908,9.9
-RCV-005,FC Waldkirchen,FC Maasdijk,Eredivisie,28545000,11418000,9991000,7136000,125.1,0.713,18.4,0.448,17.8,-2.11,-7.58,0.6,0.413,5.6
-RCV-006,FC Waldkirchen,VfL Donaustein,Bundesliga,17546000,7018000,6141000,4387000,67.5,0.696,17.6,0.562,21.7,-1.26,-4.29,0.49,0.446,4.4
-RCV-007,RKC Zandvoort-Noord,SK Meerhout,Belgian Pro League,14916000,5966000,5221000,3729000,40.8,0.717,22.0,0.515,22.8,-7.65,2.38,0.578,0.584,7.4
-RCV-008,Union Kempen,FC Hertenbos,Eredivisie,12609000,5044000,4413000,3152000,149.9,0.595,72.8,0.171,46.9,13.41,1.42,0.2,0.918,7.1
-RCV-009,Borussia Talheim,VV Polderkamp,Eredivisie,17699000,7080000,6195000,4424000,67.4,0.936,-2.8,0.863,2.3,-7.32,-2.33,0.478,0.232,3.0
-RCV-010,SV Rheinfelden,Olympia Dollard,Eredivisie,13553000,5421000,4744000,3388000,66.9,0.696,26.2,0.64,21.4,-9.82,-3.44,0.51,0.371,3.8
-RCV-011,KV Scheldebrug,FC Walloon Rovers,Belgian Pro League,31708000,12683000,11098000,7927000,50.9,0.671,24.7,0.412,17.8,3.49,-4.81,0.61,0.462,2.9
-RCV-012,SpVgg Lindenau,SC Eichberg,Bundesliga,27355000,10942000,9574000,6839000,206.4,0.595,59.6,0.21,40.5,12.15,2.57,0.256,0.906,6.9
-RCV-013,Borussia Talheim,SpVgg Lindenau,Bundesliga,15043000,6017000,5265000,3761000,121.2,0.707,21.4,0.608,20.4,-6.73,-1.22,0.426,0.516,2.9
-RCV-014,KVC Houtland,SV Rheinfelden,Bundesliga,39714000,15886000,13900000,9928000,64.8,0.81,-22.1,0.865,10.1,-11.67,-1.17,0.585,0.244,0.5
-RCV-015,KVC Houtland,RFC Lysveld,Belgian Pro League,27599000,11040000,9660000,6899000,201.6,0.482,70.1,0.22,51.6,3.96,5.27,0.353,0.933,11.1
-RCV-016,Borussia Talheim,FC Waldkirchen,Bundesliga,9987000,3995000,3495000,2497000,126.4,0.689,15.7,0.347,22.9,-7.66,-1.29,0.511,0.361,1.2
-RCV-017,Royal Ardennes FC,KV Scheldebrug,Belgian Pro League,34027000,13611000,11909000,8507000,40.4,0.755,27.9,0.49,26.8,-6.03,-7.96,0.488,0.446,3.2
-RCV-018,SC Lindehoven,KAS Dendermonde-West,Belgian Pro League,31380000,12552000,10983000,7845000,78.2,0.704,5.5,0.328,25.1,-3.22,-6.82,0.443,0.514,3.6
-RCV-019,TSV Mooshausen,AFC Kanaalstad,Eredivisie,22501000,9000000,7875000,5626000,90.7,0.683,27.3,0.581,17.6,-1.32,2.9,0.558,0.444,7.6
-RCV-020,TSV Mooshausen,FC Nordhafen,Bundesliga,13171000,5268000,4610000,3293000,64.1,0.752,18.8,0.586,20.8,-7.03,-7.77,0.522,0.373,5.6
+listing_id,player_name,selling_club,paying_club,paying_club_league,face_value_eur,installment_1_eur,installment_2_eur,installment_3_eur,annual_revenue_eur_m,wage_to_revenue,operating_cash_flow_eur_m,debt_to_assets,regulatory_headroom_eur_m,uefa_coefficient_trend,league_position_trend,broadcast_revenue_share,payment_timeliness_score,management_tenure_years
+RCV-001,Orkun Kökcü,Feyenoord,SL Benfica,Primeira Liga,25000000,10000000,8750000,6250000,185.0,0.71,9.5,0.63,10.0,2.5,0.8,0.36,0.68,3.0
+RCV-002,Mats Wieffer,Feyenoord,Brighton & Hove Albion,Premier League,27000000,10800000,9450000,6750000,210.0,0.61,21.0,0.40,34.0,3.5,2.1,0.62,0.84,4.0
+RCV-003,Lutsharel Geertruida,Feyenoord,RB Leipzig,Bundesliga,25000000,10000000,8750000,6250000,320.0,0.49,38.0,0.28,52.0,6.5,2.8,0.44,0.93,7.0
+RCV-004,Santiago Giménez,Feyenoord,AC Milan,Serie A,35000000,14000000,12250000,8750000,380.0,0.63,22.0,0.45,27.0,4.2,1.8,0.48,0.82,3.5
+RCV-005,Ramiz Zerrouki,FC Twente,Feyenoord,Eredivisie,7000000,2800000,2450000,1750000,155.0,0.58,15.0,0.41,21.0,5.0,3.2,0.29,0.86,5.0
+RCV-006,Karim Adeyemi,FC Red Bull Salzburg,Borussia Dortmund,Bundesliga,38000000,15200000,13300000,9500000,420.0,0.51,32.0,0.31,50.0,8.5,1.5,0.43,0.91,8.0
+RCV-007,Niclas Füllkrug,Borussia Dortmund,West Ham United,Premier League,27000000,10800000,9450000,6750000,230.0,0.74,8.0,0.57,13.0,1.5,-1.2,0.63,0.70,2.5
+RCV-008,Randal Kolo Muani,FC Nantes,Eintracht Frankfurt,Bundesliga,15000000,6000000,5250000,3750000,175.0,0.59,17.0,0.39,28.0,4.5,1.8,0.41,0.85,5.5
+RCV-009,Devyne Rensch,Ajax,AS Roma,Serie A,10000000,4000000,3500000,2500000,275.0,0.80,2.5,0.72,5.5,-0.8,-2.5,0.46,0.57,2.0
+RCV-010,Rasmus Kristensen,FC Red Bull Salzburg,Leeds United,Championship,10000000,4000000,3500000,2500000,85.0,0.83,1.5,0.70,3.5,-8.5,-6.5,0.58,0.52,1.5
+RCV-011,Micky van de Ven,VfL Wolfsburg,Tottenham Hotspur,Premier League,43000000,17200000,15050000,10750000,420.0,0.64,19.0,0.51,20.0,0.8,0.3,0.67,0.81,3.0
+RCV-012,Armel Bella-Kotchap,VfL Bochum,Southampton FC,Championship,12000000,4800000,4200000,3000000,130.0,0.86,-4.5,0.75,-3.0,-9.5,-7.5,0.68,0.44,1.0
+RCV-013,Arthur Cabral,FC Basel,ACF Fiorentina,Serie A,13000000,5200000,4550000,3250000,130.0,0.72,7.5,0.59,11.0,3.5,1.2,0.44,0.69,4.0
+RCV-014,Gleison Bremer,Torino FC,Juventus,Serie A,41000000,16400000,14350000,10250000,380.0,0.84,-8.0,0.77,-6.0,-1.5,-2.0,0.50,0.43,2.5
+RCV-015,Jesper Lindstrøm,Eintracht Frankfurt,SSC Napoli,Serie A,27000000,10800000,9450000,6750000,295.0,0.70,9.0,0.58,15.0,-2.5,-5.8,0.45,0.67,1.5

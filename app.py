@@ -28,16 +28,6 @@ import marketplace as mp
 st.set_page_config(page_title="RECEIV", page_icon="⚽", layout="wide")
 
 
-@st.cache_resource
-def bootstrap():
-    """Create the DB once and seed the 20 demo listings if the marketplace is empty."""
-    mp.init_db()
-    if not mp.get_open_listings():
-        mp.seed_listings()
-    return True
-
-
-bootstrap()
 
 
 # --------------------------------------------------------------------------------------
@@ -136,7 +126,8 @@ def render_credit_decision(decision):
 def render_deal_summary(listing):
     """Show the receivable's cash structure (face value + the 3 annual installments)."""
     st.markdown(
-        f"**{listing['selling_club']}** is owed **{_eur(listing['face_value_eur'])}** by "
+        f"**{listing['player_name']}** — **{listing['selling_club']}** is owed "
+        f"**{_eur(listing['face_value_eur'])}** by "
         f"**{listing['paying_club']}** ({listing['paying_club_league']})."
     )
     c = st.columns(4)
@@ -155,14 +146,14 @@ def persist_new_listing(meta, features, decision):
     """Insert a freshly scored receivable as an open listing; return its new listing_id."""
     listing_id = f"NEW-{uuid.uuid4().hex[:6].upper()}"
     cols = (
-        ["listing_id", "selling_club", "paying_club", "paying_club_league", "face_value_eur",
-         "installment_1_eur", "installment_2_eur", "installment_3_eur"]
+        ["listing_id", "player_name", "selling_club", "paying_club", "paying_club_league",
+         "face_value_eur", "installment_1_eur", "installment_2_eur", "installment_3_eur"]
         + cm.FEATURES
         + ["probability_of_default", "rating", "model_rating", "floor_rate_pct",
            "hard_filter_triggered", "hard_filter_reasons", "status"]
     )
     values = (
-        [listing_id, meta["selling_club"], meta["paying_club"], meta["league"],
+        [listing_id, meta["player_name"], meta["selling_club"], meta["paying_club"], meta["league"],
          int(meta["face_value"]), int(meta["inst1"]), int(meta["inst2"]), int(meta["inst3"])]
         + [features[f] for f in cm.FEATURES]
         + [decision["probability_of_default"], decision["rating"], decision["model_rating"],
@@ -186,7 +177,7 @@ def render_sidebar():
     st.sidebar.metric("Open listings", len(mp.get_open_listings()))
 
     st.sidebar.divider()
-    st.sidebar.caption("**Reset demo** — wipe all bids/settlements and reseed the 20 demo deals.")
+    st.sidebar.caption("**Reset demo** — wipe all bids/settlements and reseed the 15 demo deals.")
     if st.sidebar.button("🔄 Reset demo to clean state", use_container_width=True):
         mp.seed_listings(reset=True)            # reset + reseed (Layer 3)
         st.session_state.pop("new_score", None)  # drop any in-progress scoring
@@ -196,7 +187,7 @@ def render_sidebar():
         st.rerun()
 
     st.sidebar.divider()
-    st.sidebar.info("⚠️ Academic MVP — all clubs, financials and ratings are **synthetic**.")
+    st.sidebar.info("⚠️ Academic MVP — club names and transfers are real; financial figures are **illustrative estimates**.")
     return role
 
 
@@ -219,7 +210,7 @@ def club_view():
             st.warning("No open listings. Use the sidebar to reset the demo.")
         else:
             labels = {
-                f"{l['listing_id']} — {l['paying_club']} (pays) · rating {l['rating']}": l["listing_id"]
+                f"{l['listing_id']} — {l['player_name']} ({l['selling_club']} → {l['paying_club']}) · {l['rating']}": l["listing_id"]
                 for l in listings
             }
             chosen = st.selectbox("Pick a demo receivable to inspect", list(labels.keys()))
@@ -241,6 +232,7 @@ def club_view():
 
         with st.form("score_form"):
             st.markdown("**Deal**")
+            player_name = st.text_input("Player / contract reference", "Demo Player")
             d1, d2, d3 = st.columns(3)
             selling_club = d1.text_input("Selling club (you)", "FC Demo United")
             paying_club = d2.text_input("Paying club (obligor)", "Real Synthetica")
@@ -279,7 +271,8 @@ def club_view():
             # Stash the full result so it survives the rerun caused by the "List" button.
             st.session_state["new_score"] = {
                 "meta": {
-                    "selling_club": selling_club, "paying_club": paying_club, "league": league,
+                    "player_name": player_name, "selling_club": selling_club,
+                    "paying_club": paying_club, "league": league,
                     "face_value": face_value, "inst1": inst1, "inst2": inst2, "inst3": inst3,
                 },
                 "features": feat_inputs,
@@ -371,7 +364,7 @@ def investor_detail(listing):
         st.session_state.pop("inv_selected", None)
         st.rerun()
 
-    st.markdown(f"### {listing['listing_id']} — {listing['paying_club']}")
+    st.markdown(f"### {listing['listing_id']} — {listing['player_name']}")
     render_deal_summary(listing)
     st.divider()
 
@@ -450,13 +443,13 @@ def investor_browse():
     # Header + one row per listing.
     cols_spec = [3, 2, 1.3, 1.2, 1.6]
     h = st.columns(cols_spec)
-    for col, label in zip(h, ["Paying club", "Face value", "Rating", "Floor", ""]):
+    for col, label in zip(h, ["Player / Paying Club", "Face value", "Rating", "Floor", ""]):
         col.caption(label)
 
     for l in listings:
         emoji, colour = RATING_STYLE[l["rating"]]
         row = st.columns(cols_spec, vertical_alignment="center")
-        row[0].markdown(f"**{l['paying_club']}**  \n:gray[{l['paying_club_league']}]")
+        row[0].markdown(f"**{l['player_name']}**  \n:gray[{l['paying_club']} · {l['paying_club_league']}]")
         row[1].markdown(_eur(l["face_value_eur"]))
         row[2].markdown(f"{emoji} :{colour}[**{l['rating']}**]")
         row[3].markdown(f"{l['floor_rate_pct']:.1f}%")
@@ -483,9 +476,13 @@ def investor_view():
 # Main
 # --------------------------------------------------------------------------------------
 def main():
+    mp.init_db()                          # always runs first — detects stale schema and wipes if needed
+    if not mp.get_open_listings():        # seed when DB is empty (INSERT OR IGNORE is safe to repeat)
+        mp.seed_listings()
+
     st.title("RECEIV — Transfer Receivables Marketplace")
     st.caption("Turning illiquid football transfer receivables into rated, tradeable claims. "
-               "Demo on synthetic data.")
+               "Demo on real transfers; financial figures are illustrative estimates.")
 
     role = render_sidebar()
     st.divider()
