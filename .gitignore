@@ -46,3 +46,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# --- Language-specific history files ---
+.Rhistory
+.Rdata
+.Ruserdata
