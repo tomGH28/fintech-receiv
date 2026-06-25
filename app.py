@@ -105,13 +105,13 @@ def render_credit_decision(decision):
     if decision["hard_filter_triggered"]:
         reasons = "\n".join(f"- {r}" for r in decision["hard_filter_reasons"])
         st.error(
-            f"**Hard filter triggered — capped to {decision['rating']} "
+            f"**Hard filter triggered: capped to {decision['rating']} "
             f"(model alone said {decision['model_rating']}).**\n\n"
             f"Structurally distressed; blocked from investment grade:\n\n{reasons}"
         )
 
     # Top risk drivers — the per-prediction explanation, in plain language.
-    st.markdown("**Why this rating — top risk drivers**")
+    st.markdown("**Why this rating: top risk drivers**")
     for d in decision["top_drivers"]:
         # Colour the arrow AND the label together so they agree: red = raises risk, green =
         # lowers it. Use a plain ▲/▼ glyph wrapped in Streamlit markdown colour (the fixed-
@@ -119,14 +119,14 @@ def render_credit_decision(decision):
         increases = d["direction"] == "increases risk"
         arrow = "▲" if increases else "▼"
         dcol = "red" if increases else "green"
-        st.markdown(f":{dcol}[{arrow}] **{d['label']}** = {d['value']:,.2f}  —  :{dcol}[{d['direction']}]")
+        st.markdown(f":{dcol}[{arrow}] **{d['label']}** = {d['value']:,.2f} · :{dcol}[{d['direction']}]")
     st.caption("Drivers come from the model's own SHAP contributions for this specific club.")
 
 
 def render_deal_summary(listing):
     """Show the receivable's cash structure (face value + the 3 annual installments)."""
     st.markdown(
-        f"**{listing['player_name']}** — **{listing['selling_club']}** is owed "
+        f"**{listing['player_name']}**: **{listing['selling_club']}** is owed "
         f"**{_eur(listing['face_value_eur'])}** by "
         f"**{listing['paying_club']}** ({listing['paying_club_league']})."
     )
@@ -177,7 +177,7 @@ def render_sidebar():
     st.sidebar.metric("Open listings", len(mp.get_open_listings()))
 
     st.sidebar.divider()
-    st.sidebar.caption("**Reset demo** — wipe all bids/settlements and reseed the 15 demo deals.")
+    st.sidebar.caption("**Reset demo**: wipe all bids/settlements and reseed the 15 demo deals.")
     if st.sidebar.button("🔄 Reset demo to clean state", use_container_width=True):
         mp.seed_listings(reset=True)            # reset + reseed (Layer 3)
         st.session_state.pop("new_score", None)  # drop any in-progress scoring
@@ -187,7 +187,7 @@ def render_sidebar():
         st.rerun()
 
     st.sidebar.divider()
-    st.sidebar.info("⚠️ Academic MVP — club names and transfers are real; financial figures are **illustrative estimates**.")
+    st.sidebar.info("⚠️ Academic MVP: club names and transfers are real; financial figures are **illustrative estimates**.")
     return role
 
 
@@ -195,7 +195,7 @@ def render_sidebar():
 # CLUB VIEW
 # --------------------------------------------------------------------------------------
 def club_view():
-    st.subheader("Club — turn a transfer receivable into cash now")
+    st.subheader("Club: turn a transfer receivable into cash now")
     st.write(
         "You are owed a deferred transfer fee. Get it rated, then list it so institutional "
         "investors can bid to fund it today (you receive cash up front, at a discount)."
@@ -210,7 +210,7 @@ def club_view():
             st.warning("No open listings. Use the sidebar to reset the demo.")
         else:
             labels = {
-                f"{l['listing_id']} — {l['player_name']} ({l['selling_club']} → {l['paying_club']}) · {l['rating']}": l["listing_id"]
+                f"{l['listing_id']}: {l['player_name']} ({l['selling_club']} to {l['paying_club']}) · {l['rating']}": l["listing_id"]
                 for l in listings
             }
             chosen = st.selectbox("Pick a demo receivable to inspect", list(labels.keys()))
@@ -296,7 +296,7 @@ def club_view():
         # Confirmation after a successful listing.
         if st.session_state.get("last_listed"):
             st.success(
-                f"✅ Listed as **{st.session_state['last_listed']}** — it's now an open listing "
+                f"✅ Listed as **{st.session_state['last_listed']}**: it's now an open listing "
                 "investors can browse and bid on (switch to the **Investor** role in the sidebar)."
             )
 
@@ -317,7 +317,7 @@ def render_settlement(listing):
     bids = mp.get_bids(listing["listing_id"])
     settlement = mp.get_settlement(listing["listing_id"])
 
-    st.success("🔓 Auction run — bids revealed below.")
+    st.success("🔓 Auction run: bids revealed below.")
 
     # Rank bids: winner first, then beaten (active->lost) cheapest-first, then rejected.
     def sort_key(b):
@@ -327,13 +327,13 @@ def render_settlement(listing):
     st.markdown("**Bids (unsealed)**")
     for b in sorted(bids, key=sort_key):
         if b["status"] == "winning":
-            st.markdown(f"🏆 :green[**{b['investor_name']} — {b['bid_rate_pct']:.2f}%**] · "
+            st.markdown(f"🏆 :green[**{b['investor_name']} at {b['bid_rate_pct']:.2f}%**] · "
                         ":green[winning bid (lowest qualifying rate)]")
         elif b["status"] == "lost":
             # Greyed: qualified but outbid by a cheaper rate.
-            st.markdown(f":gray[▫️ {b['investor_name']} — {b['bid_rate_pct']:.2f}% · outbid]")
+            st.markdown(f":gray[▫️ {b['investor_name']} at {b['bid_rate_pct']:.2f}% · outbid]")
         else:  # rejected
-            st.markdown(f":red[🚫 {b['investor_name']} — {b['bid_rate_pct']:.2f}% · "
+            st.markdown(f":red[🚫 {b['investor_name']} at {b['bid_rate_pct']:.2f}% · "
                         f"rejected (below {listing['floor_rate_pct']:.1f}% floor)]")
 
     st.divider()
@@ -364,7 +364,7 @@ def investor_detail(listing):
         st.session_state.pop("inv_selected", None)
         st.rerun()
 
-    st.markdown(f"### {listing['listing_id']} — {listing['player_name']}")
+    st.markdown(f"### {listing['listing_id']}: {listing['player_name']}")
     render_deal_summary(listing)
     st.divider()
 
@@ -380,7 +380,7 @@ def investor_detail(listing):
 
     # --- Stage 2: place a sealed bid ----------------------------------------------------
     st.markdown("**Place a sealed bid**")
-    st.caption("Bid the annual discount rate you require. Bids are SEALED — you cannot see "
+    st.caption("Bid the annual discount rate you require. Bids are SEALED: you cannot see "
                "others' bids (or their values) until the auction is run.")
 
     with st.form("bid_form"):
@@ -396,7 +396,7 @@ def investor_detail(listing):
             # Honest feedback: below-floor bids underprice the risk and are rejected.
             st.error(
                 f"Bid **{bid_rate:.2f}%** is below the **{listing['floor_rate_pct']:.1f}% floor** "
-                "for this rating — rejected as underpricing the risk. Bid at or above the floor."
+                "for this rating. Rejected as underpricing the risk. Bid at or above the floor."
             )
         else:
             st.success(f"Sealed bid of **{bid_rate:.2f}%** recorded for **{investor_name}**.")
@@ -405,7 +405,7 @@ def investor_detail(listing):
     active = [b for b in mp.get_bids(listing["listing_id"]) if b["status"] == "active"]
     st.divider()
     if active:
-        st.info(f"🔒 {len(active)} sealed bid(s) on this listing — values hidden until the auction runs.")
+        st.info(f"🔒 {len(active)} sealed bid(s) on this listing. Values hidden until the auction runs.")
         if st.button("🔓 Run auction & reveal", type="primary", use_container_width=True):
             mp.run_auction(listing["listing_id"])  # lowest qualifying rate wins
             st.rerun()
@@ -459,7 +459,7 @@ def investor_browse():
 
 
 def investor_view():
-    st.subheader("Investor — fund a receivable, collect the installments later")
+    st.subheader("Investor: fund a receivable, collect the installments later")
 
     selected = st.session_state.get("inv_selected")
     if selected:
@@ -480,7 +480,7 @@ def main():
     if not mp.get_open_listings():        # seed when DB is empty (INSERT OR IGNORE is safe to repeat)
         mp.seed_listings()
 
-    st.title("RECEIV — Transfer Receivables Marketplace")
+    st.title("RECEIV: Transfer Receivables Marketplace")
     st.caption("Turning illiquid football transfer receivables into rated, tradeable claims. "
                "Demo on real transfers; financial figures are illustrative estimates.")
 
