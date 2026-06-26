@@ -180,7 +180,7 @@ encode:
   single-purpose modules with clean layer boundaries.
 
 Claude Code was chosen because it understands the full codebase across files in a single
-context window, can make multi-file coordinated edits, and produces verifiable diffs —
+context window, can make multi-file coordinated edits, and produces verifiable diffs, making it
 well suited to an MVP that needs coherent architecture across five Python modules.
 
 ---
